@@ -20,7 +20,8 @@ const spawnServer = async () => {
                 data = '';
                 resolve();
             }
-        })
+            // process.stdout.write(d);
+        });
         serverProcess.on('error', err => reject(err));
     });
 };
@@ -31,7 +32,7 @@ beforeAll(async () => {
 
 afterAll(() => {
     serverProcess.kill();
-})
+});
 
 jest.setTimeout(10000);
 
@@ -185,8 +186,8 @@ describe('e2e tests', () => {
                     .catch(err => {
                         expect(err.response.status).toBe(404);
                         expect(err.response.data.error).toBe('NotFoundError');
-                    })
-            })
+                    });
+            });
     });
 
 

@@ -1,5 +1,6 @@
 const http = require('http');
 const { v4 } = require('uuid');
+const Database = require('./src/db');
 const { InvalidPersonId, NotFoundError, InvalidRequestError } = require('./src/errors');
 
 require('dotenv').config();
@@ -7,17 +8,8 @@ require('dotenv').config();
 const host = 'localhost';
 const port = process.env.PORT || 3000;
 
-var persons = [];
+let database = Database.create();
 
-
-const findPersonOrThrow = (personId) => {
-    const personIndex = persons.findIndex(item => item.id === personId);
-    if (personIndex < 0) {
-        throw new NotFoundError();
-    }
-
-    return persons[personIndex];
-}
 
 const VALIDATION_RULES = {
     name: x => typeof x === 'string' && x.trim(),
@@ -25,11 +17,14 @@ const VALIDATION_RULES = {
     hobbies: x => Array.isArray(x) && x.reduce((old, y) => old && typeof y === 'string', true)
 }
 
+const makeResponse = (res, status, data) => {
+    res.writeHead(status, {'Content-Type': 'application/json'});
+    res.end(JSON.stringify(data));
+}
+
 
 const getAllPersons = (req, res) => {
-    res.setHeader("Content-Type", "application/json");
-    res.writeHead(200);
-    res.end(JSON.stringify(persons));
+    makeResponse(res, 200, database.persons());
 };
 
 const getPersonIdFromUrlOrThrow = (url) => {
@@ -42,9 +37,9 @@ const getPersonIdFromUrlOrThrow = (url) => {
 
 const getPersonById = (req, res) => {
     const personId = getPersonIdFromUrlOrThrow(req.url);
-    const person = findPersonOrThrow(personId);
-    res.writeHead(200, {"Content-Type": "application/json"});
-    res.end(JSON.stringify(person));
+    const person = database.findPersonOrThrow(personId);
+
+    makeResponse(res, 200, person);
 };
 
 const createPerson = (req, res, json) => {
@@ -65,15 +60,14 @@ const createPerson = (req, res, json) => {
         age: json.age,
         hobbies: json.hobbies
     };
-    persons.push(person);
+    database.addNewPerson(person);
 
-    res.writeHead(201, {"Content-Type": "application/json"});
-    res.end(JSON.stringify(person));
+    makeResponse(res, 201, person);
 }
 
 const updatePersonById = (req, res, json) => {
     const personId = getPersonIdFromUrlOrThrow(req.url);
-    let person = findPersonOrThrow(personId);
+    let person = database.findPersonOrThrow(personId);
 
     if (!json) {
         throw new InvalidRequestError();
@@ -86,19 +80,15 @@ const updatePersonById = (req, res, json) => {
         }
         person[name] = val;
     }
-    res.writeHead(200, {"Content-Type": "application/json"});
-    res.end(JSON.stringify(person));
+
+    makeResponse(res, 200, person);
 }
 
 const deletePersonById = (req, res) => {
     const personId = getPersonIdFromUrlOrThrow(req.url);
-    const index = persons.findIndex(x => x.id === personId);
-    if (index < 0) {
-        throw new NotFoundError();
-    }
-    persons.splice(index, 1);
-    res.writeHead(204, {"Content-Type": "application/json"});
-    res.end(JSON.stringify({'message': 'removed'}));
+    database.deletePersonOrThrow(personId);
+
+    makeResponse(res, 204, {'message': 'removed'});
 }
 
 const requestListener = function (req, res) {
@@ -125,9 +115,7 @@ const requestListener = function (req, res) {
                     return deletePersonById(req, res);
 
                 default:
-                    res.setHeader("Content-Type", "application/json");
-                    res.writeHead(404);
-                    res.end(JSON.stringify({'error': 'Requested URL not found'}));
+                    makeResponse(res, 404, {'error': 'Requested URL not found'});
             }
         } catch (e) {
             let status = 500;
@@ -136,8 +124,7 @@ const requestListener = function (req, res) {
             } else if (e instanceof NotFoundError) {
                 status = 404;
             }
-            res.writeHead(status, {'Content-Type': 'application/json'});
-            res.end(JSON.stringify({'error': e.toString()}));
+            makeResponse(res, status, {'error': e.toString()});
         }
     })
 };
