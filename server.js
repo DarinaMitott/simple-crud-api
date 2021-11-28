@@ -1,6 +1,7 @@
 const http = require('http');
 const { v4 } = require('uuid');
 const { InvalidPersonId, NotFoundError, InvalidRequestError } = require('./src/errors');
+
 require('dotenv').config();
 
 const host = 'localhost';
@@ -110,14 +111,19 @@ const requestListener = function (req, res) {
             switch (true) {
                 case req.url === '/person' && req.method === 'GET':
                     return getAllPersons(req, res);
+
                 case req.url.startsWith('/person/') && req.method === 'GET':
                     return getPersonById(req, res);
+
                 case req.url.startsWith('/person') && req.method === 'POST':
                     return createPerson(req, res, json);
+
                 case req.url.startsWith('/person/') && req.method === 'PUT':
                     return updatePersonById(req, res, json);
+
                 case req.url.startsWith('/person/') && req.method === 'DELETE':
                     return deletePersonById(req, res);
+
                 default:
                     res.setHeader("Content-Type", "application/json");
                     res.writeHead(404);
@@ -125,7 +131,7 @@ const requestListener = function (req, res) {
             }
         } catch (e) {
             let status = 500;
-            if (e instanceof InvalidPersonId) {
+            if (e instanceof InvalidPersonId || e instanceof InvalidRequestError) {
                 status = 400;
             } else if (e instanceof NotFoundError) {
                 status = 404;
