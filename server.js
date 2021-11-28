@@ -15,7 +15,7 @@ const makeResponse = (res, status, data) => {
 
 
 const requestListener = function (req, res) {
-    console.log(`requested: ${req.url}, method: ${req.method}`);
+    // console.log(`requested: ${req.url}, method: ${req.method}`);
     let buffers = [];
     req.on('data', chunk => buffers.push(chunk));
     req.on('end', () => {
@@ -26,25 +26,6 @@ const requestListener = function (req, res) {
                     return route.handleRequest(req, res, json);
                 }
             }
-            /*switch (true) {
-                case req.url === '/person' && req.method === 'GET':
-                    return getAllPersons(req, res);
-
-                case req.url.startsWith('/person/') && req.method === 'GET':
-                    return getPersonById(req, res);
-
-                case req.url.startsWith('/person') && req.method === 'POST':
-                    return createPerson(req, res, json);
-
-                case req.url.startsWith('/person/') && req.method === 'PUT':
-                    return updatePersonById(req, res, json);
-
-                case req.url.startsWith('/person/') && req.method === 'DELETE':
-                    return deletePersonById(req, res);
-
-                default:
-                    makeResponse(res, 404, {'error': 'Requested URL not found'});
-            }*/
         } catch (e) {
             let status = 500;
             if (e instanceof InvalidPersonId || e instanceof InvalidRequestError) {
