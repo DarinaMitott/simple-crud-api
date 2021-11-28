@@ -26,6 +26,7 @@ const requestListener = function (req, res) {
                     return route.handleRequest(req, res, json);
                 }
             }
+            throw new NotFoundError('Requested URL not found');
         } catch (e) {
             let status = 500;
             if (e instanceof InvalidPersonId || e instanceof InvalidRequestError) {
